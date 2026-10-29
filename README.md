@@ -1,48 +1,50 @@
 # FIM-IPL Frontend
 
-React + TypeScript + Vite dashboard for the FIM-IPL backend. The interface is
-designed for an operator who needs to answer three questions quickly:
-
-1. Is monitoring running?
-2. Did a file change, and was it quarantined?
-3. Is the audit ledger still verifiable?
+Dashboard React + TypeScript + Vite untuk mengoperasikan FIM-IPL Backend.
+Repository ini mandiri: frontend dapat di-clone dan dijalankan tanpa file
+dokumentasi atau folder lokal dari project lain.
 
 ## Requirements
 
 - Node.js LTS.
-- A running FIM-IPL backend.
+- FIM-IPL Backend yang sudah berjalan.
+- Browser modern dengan JavaScript aktif.
 
-## Development
+## Standalone Development
 
-When this repository is inside the FIM-IPL monorepo, the convenient launcher is:
-
-```powershell
-.\dev.ps1
-```
-
-The launcher belongs to the monorepo, not this standalone frontend repository.
-When this repository is cloned by itself, use the commands below.
-
-To run the frontend alone:
+Install dependency dan salin konfigurasi proxy:
 
 ```bash
 npm ci
-npm run dev
-```
-
-On Windows PowerShell use `npm.cmd` instead of `npm`. Copy `.env.example` to
-`.env` and set `FIM_API_PORT` to the port where the backend listens. The Vite
-proxy forwards `/api` requests to `127.0.0.1:<FIM_API_PORT>`. The dashboard is
-available at `http://localhost:3000`.
-
-Example Linux/WSL setup:
-
-```bash
 cp .env.example .env
-sed -i 's/^FIM_API_PORT=.*/FIM_API_PORT=8080/' .env
-npm ci
+```
+
+Atur port API backend di `.env`:
+
+```text
+FIM_API_PORT=8080
+```
+
+Jalankan:
+
+```bash
 npm run dev -- --host localhost
 ```
+
+Windows PowerShell memakai `npm.cmd`:
+
+```powershell
+npm.cmd ci
+Copy-Item .env.example .env
+npm.cmd run dev -- --host localhost
+```
+
+Dashboard tersedia di `http://localhost:3000`. Semua request `/api` diproxy
+ke `http://127.0.0.1:<FIM_API_PORT>`.
+
+Jika backend berjalan di host lain, ubah `FIM_API_PORT` hanya untuk port lokal;
+untuk host berbeda, sesuaikan target proxy di `vite.config.ts` dan gunakan
+CORS allowlist backend.
 
 ## Production Build
 
@@ -53,37 +55,74 @@ npm run build
 npm run preview
 ```
 
-`dist/` is generated output and is intentionally ignored by Git.
+Deploy isi `dist/` ke Nginx, Caddy, atau web server statis. Reverse proxy API
+ke backend sebaiknya memakai HTTPS dan hanya meneruskan endpoint yang memang
+diperlukan.
 
-## Dashboard Areas
+## Halaman dan Fungsi
 
-- **Dashboard:** baseline status, scan performance, current quarantine state,
-  realtime connection state, and recent anomalies.
-- **Audit Trail:** paginated blocks, action filters, search, export, chain
-  verification, block detail, and audited quarantine release.
-- **Settings:** monitoring, maintenance mode, baseline operations, Telegram,
-  backup, and Auditor account management.
-- **System:** runtime information, worker configuration, watch paths, and
-  security posture.
+- **Dashboard:** kondisi baseline, jumlah file, anomali, karantina, performa
+  scan, status agent, dan status koneksi realtime.
+- **Audit Trail:** pencarian, filter aksi, pagination, detail block, export,
+  verifikasi chain, dan release karantina yang tercatat.
+- **Settings:** monitoring, maintenance, baseline, Telegram, backup, dan akun
+  Auditor.
+- **System:** versi, OS, worker, interval, watch path, dan postur sistem.
+
+## Login dan API
+
+Frontend memakai JWT Bearer untuk REST API dan SSE. Endpoint login default:
+
+```text
+POST /api/v1/secure-gate
+```
+
+Frontend tidak menerima kembali token bot Telegram. Semua perubahan konfigurasi
+dan hak akses tetap divalidasi ulang oleh backend; disable button di frontend
+bukan pengganti RBAC server.
 
 ## Security Notes
 
-- The frontend never receives the stored Telegram bot token from the backend.
-- Bearer JWT authentication is used for API and SSE requests.
-- For this local thesis demo, the JWT is stored in `localStorage`. Production
-  deployment should move the token to a secure `HttpOnly`, `Secure`, `SameSite`
-  cookie and serve the dashboard over HTTPS.
-- Keep the dashboard on a separate origin from the monitored WordPress site to
-  reduce the impact of a web application XSS issue.
-- The frontend cannot protect the backend if an attacker becomes `root` or the
-  FIM service user. Host permissions and deployment isolation are backend
-  responsibilities.
+- Untuk demo lokal, JWT disimpan di `localStorage` agar alur SPA sederhana.
+- Untuk production, gunakan cookie `HttpOnly`, `Secure`, dan `SameSite`, serta
+  HTTPS.
+- Host dashboard sebaiknya berbeda dari origin WordPress yang dipantau.
+- Jika attacker menjadi `root` atau user service FIM, frontend tidak dapat
+  membatasi dampaknya. Isolasi OS dan secret management adalah tanggung jawab
+  deployment backend.
 
-## Design Principles
+## Text and UX Principles
 
-- Operational Indonesian copy is concise and specific; English is available
-  through the language toggle.
-- No decorative claim is presented as a security guarantee. The UI reports
-  actual scan, quarantine, and ledger states.
-- SSE is the primary realtime path. Polling is only a fallback when SSE is
-  disconnected.
+- Bahasa Indonesia menjadi default; English tersedia lewat language toggle.
+- Copy berorientasi operator: menjelaskan apa yang terjadi dan langkah berikutnya.
+- Tidak memakai klaim seperti "100% aman" atau "tidak dapat ditembus".
+- Status kosong, error, loading, dan fallback realtime dijelaskan secara nyata.
+- SSE menjadi jalur utama; polling hanya dipakai saat SSE terputus.
+
+## Troubleshooting
+
+### Dashboard kosong atau terus loading
+
+1. Cek backend: `curl http://127.0.0.1:8080/api/v1/healthz`.
+2. Pastikan `FIM_API_PORT` sesuai port backend.
+3. Pastikan login path backend adalah `/api/v1/secure-gate`.
+4. Periksa CORS bila backend dan frontend berbeda host.
+5. Jalankan `npm ci` ulang bila dependency native Vite berasal dari OS berbeda.
+
+### Error native Vite/Rolldown
+
+Hapus `node_modules` dan install ulang pada OS yang sedang digunakan:
+
+```bash
+rm -rf node_modules
+npm ci
+```
+
+Jangan memakai `node_modules` Windows dari WSL/Linux atau sebaliknya.
+
+## License and Scope
+
+Project ini ditujukan untuk implementasi dan evaluasi FIM-IPL. Script simulasi
+serangan harus dijalankan hanya pada direktori uji yang Anda miliki. Jangan
+menjalankan payload atau generator pada web production tanpa backup dan
+maintenance window.
