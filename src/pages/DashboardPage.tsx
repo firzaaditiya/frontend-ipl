@@ -129,6 +129,10 @@ export default function DashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  // Jam lokal untuk hitung mundur pemindaian berikutnya (v1.2.0). Diperbarui
+  // tiap detik agar operator dapat mengamati polling deterministik secara
+  // langsung, bukan hanya membaca interval pada pengaturan.
+  const [now, setNow] = useState(() => Date.now());
   const inFlight = useRef(false);
 
   const loadData = useCallback(async (silent = false) => {
@@ -177,6 +181,11 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadData(true);
   }, [loadData]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   // Polling hanya menjadi fallback saat SSE tidak terhubung.
   useEffect(() => {
@@ -228,6 +237,18 @@ export default function DashboardPage() {
   }));
 
   const lastMetric = metrics[metrics.length - 1];
+  // Pemindaian berikutnya diperkirakan dari siklus terakhir + interval.
+  // Nilai ini sengaja null (bukan tebakan) bila pemantauan berhenti, mode
+  // pemeliharaan aktif, atau belum ada siklus yang tercatat, agar dasbor
+  // tidak menampilkan hitung mundur yang menyesatkan.
+  const nextScanInSec = (() => {
+    if (!stats?.is_monitoring || stats?.maintenance_mode || !lastMetric) return null;
+    const intervalSec = settings?.scan_interval_sec;
+    if (!intervalSec || intervalSec <= 0) return null;
+    const last = new Date(lastMetric.timestamp).getTime();
+    if (Number.isNaN(last)) return null;
+    return Math.ceil((last + intervalSec * 1000 - now) / 1000);
+  })();
   const avgMs =
     metrics.length > 0
       ? Math.round(metrics.reduce((total, metric) => total + metric.elapsed_ms, 0) / metrics.length)
@@ -490,12 +511,14 @@ export default function DashboardPage() {
             />
             <StatusRow
               label={t('dash.interval')}
-              value={t('dash.seconds', { value: settings?.scan_interval_sec ?? 300 })}
+              value={
+                settings ? t('dash.seconds', { value: settings.scan_interval_sec }) : '—'
+              }
               icon={<Clock3 className="h-3 w-3" />}
             />
             <StatusRow
               label={t('dash.worker')}
-              value={t('dash.goroutines', { value: settings?.worker_count ?? 4 })}
+              value={settings ? t('dash.goroutines', { value: settings.worker_count }) : '—'}
               icon={<Cpu className="h-3 w-3" />}
             />
             <StatusRow
@@ -510,6 +533,29 @@ export default function DashboardPage() {
                 lastMetric ? formatRelative(lastMetric.timestamp, lang) : t('common.never')
               }
               icon={<Timer className="h-3 w-3" />}
+            />
+            <StatusRow
+              label={t('dash.nextScan')}
+              value={
+                nextScanInSec === null
+                  ? '—'
+                  : nextScanInSec <= 0
+                    ? t('dash.nextScanSoon')
+                    : t('dash.seconds', { value: nextScanInSec })
+              }
+              icon={<Timer className="h-3 w-3" />}
+            />
+            <StatusRow
+              label={t('dash.lastCycle')}
+              value={
+                lastMetric
+                  ? t('dash.lastCycleValue', {
+                      anomalies: lastMetric.anomalies,
+                      quarantined: lastMetric.quarantined,
+                    })
+                  : '—'
+              }
+              icon={<Activity className="h-3 w-3" />}
             />
           </div>
 
