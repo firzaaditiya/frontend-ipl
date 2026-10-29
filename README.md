@@ -34,7 +34,8 @@ npm run dev
 ```
 
 The Vite proxy reads the backend `server_port` from `../backend/data/config.json`.
-Set `FIM_API_PORT` to override it. The dashboard is available at
+In a standalone frontend clone, copy `.env.example` to `.env` and set
+`FIM_API_PORT` to override it. The dashboard is available at
 `http://localhost:3000`.
 
 ## Production Build
