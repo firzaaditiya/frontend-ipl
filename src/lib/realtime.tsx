@@ -44,7 +44,7 @@ function parseChunk(chunk: string, fallbackType: string): RealtimeEvent | null {
 }
 
 export function RealtimeProvider({ children }: { children: ReactNode }) {
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [connected, setConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState<RealtimeEvent | null>(null);
   const listenersRef = useRef(new Set<(event: RealtimeEvent) => void>());
@@ -57,7 +57,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!token) {
+    if (!isAuthenticated) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setConnected(false);
       return;
@@ -81,11 +81,14 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     };
 
     const connect = async () => {
-      if (cancelled || !token) return;
+      if (cancelled || !isAuthenticated) return;
       controller = new AbortController();
       try {
+        // Cookie sesi dikirim otomatis (credentials: include); tidak ada
+        // lagi header Authorization sejak v1.1.0.
         const res = await fetch('/api/v1/events', {
-          headers: { Authorization: `Bearer ${token}`, Accept: 'text/event-stream' },
+          credentials: 'include',
+          headers: { Accept: 'text/event-stream' },
           signal: controller.signal,
         });
 
@@ -138,7 +141,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       if (timer) window.clearTimeout(timer);
       setConnected(false);
     };
-  }, [token]);
+  }, [isAuthenticated]);
 
   const value = useMemo(
     () => ({ connected, lastEvent, subscribe }),

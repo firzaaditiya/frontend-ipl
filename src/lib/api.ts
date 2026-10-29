@@ -1,25 +1,25 @@
 import axios from 'axios';
 
+// withCredentials: true membuat browser mengirim cookie sesi HttpOnly pada
+// setiap request /api/v1 (same-origin lewat proxy Nginx maupun dev Vite).
+// Sejak v1.1.0 tidak ada lagi header Authorization: token tidak pernah
+// menyentuh JavaScript, jadi tidak ada yang bisa dicuri lewat XSS.
 const api = axios.create({
   baseURL: '/api/v1',
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('fim_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('fim_token');
+    // 401 pada /auth/me atau /auth/logout sudah ditangani langsung oleh
+    // AuthProvider (cek sesi awal / keluar); jangan memancarkan
+    // auth:logout lagi dari sini, karena itu akan memicu loop.
+    const url = (error.config?.url ?? '') as string;
+    if (error.response?.status === 401 && !url.includes('/auth/me') && !url.includes('/auth/logout')) {
       window.dispatchEvent(new Event('auth:logout'));
     }
     return Promise.reject(error);
@@ -27,8 +27,18 @@ api.interceptors.response.use(
 );
 
 // ---------- Auth + RBAC ----------
+// Login TIDAK mengembalikan token (sejak v1.1.0): server menulis cookie
+// HttpOnly, dan respons hanya berisi role + username + expires_at.
 export const login = (username: string, password: string) =>
   api.post('/secure-gate', { username, password });
+
+// Mengembalikan identitas pemilik cookie sesi (dipakai AuthProvider untuk
+// memulihkan sesi setelah refresh halaman).
+export const getMe = () => api.get('/auth/me');
+
+// Menghapus cookie sesi di server; state lokal selalu dibersihkan oleh
+// AuthProvider walau request ini gagal.
+export const logout = () => api.post('/auth/logout');
 
 export const setupPassword = (username: string, password: string) =>
   api.post('/setup', { username, password });

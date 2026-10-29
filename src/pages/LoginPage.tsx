@@ -92,7 +92,8 @@ export default function LoginPage() {
       }
 
       const res = await apiLogin(username.trim(), password);
-      login(res.data.token, res.data.role);
+      // Respons login tidak lagi berisi token (cookie HttpOnly): cukup role.
+      login(res.data.role);
       navigate('/dashboard');
     } catch (err) {
       const raw = errorMessage(err, t('login.authFailed'));
@@ -177,7 +178,7 @@ export default function LoginPage() {
         <div className="relative flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border pt-5 text-[10px] text-muted-foreground">
           <span>{t('login.footerEnv')}</span>
           <span className="text-muted-foreground/40">·</span>
-          <span>v1.0.0</span>
+          <span>v1.1.0</span>
         </div>
       </section>
 

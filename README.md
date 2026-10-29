@@ -71,11 +71,18 @@ diperlukan.
 
 ## Login dan API
 
-Frontend memakai JWT Bearer untuk REST API dan SSE. Endpoint login default:
+Frontend memakai cookie sesi HttpOnly untuk REST API dan SSE (sejak v1.1.0).
+Endpoint login default:
 
 ```text
 POST /api/v1/secure-gate
 ```
+
+Login tidak mengembalikan token apa pun di body JSON: server menulis cookie
+`fim_session` (`Path=/api/v1`, `HttpOnly`, `SameSite=Lax`, `Secure` di
+produksi). Sesi dipulihkan setelah refresh lewat `GET /api/v1/auth/me`, dan
+diakhiri lewat `POST /api/v1/auth/logout`. Header `Authorization: Bearer`
+tidak lagi diterima oleh backend.
 
 Frontend tidak menerima kembali token bot Telegram. Semua perubahan konfigurasi
 dan hak akses tetap divalidasi ulang oleh backend; disable button di frontend
@@ -83,9 +90,14 @@ bukan pengganti RBAC server.
 
 ## Security Notes
 
-- Untuk demo lokal, JWT disimpan di `localStorage` agar alur SPA sederhana.
-- Untuk production, gunakan cookie `HttpOnly`, `Secure`, dan `SameSite`, serta
-  HTTPS.
+- Tidak ada token di `localStorage` (kecuali preferensi bahasa `fim_lang`,
+  yang bukan kredensial). Sisa token dari versi lama dihapus otomatis saat
+  aplikasi pertama kali dibuka setelah update.
+- Cookie memakai `HttpOnly`, `SameSite=Lax`, dan `Secure` di produksi
+  (`FIM_COOKIE_SECURE=1`); untuk dev HTTP lokal, backend dijalankan dengan
+  `FIM_COOKIE_SECURE=0`.
+- Frontend dan API harus satu origin (proxy yang sama); tidak ada skema
+  lintas origin untuk dashboard.
 - Host dashboard sebaiknya berbeda dari origin WordPress yang dipantau.
 - Jika attacker menjadi `root` atau user service FIM, frontend tidak dapat
   membatasi dampaknya. Isolasi OS dan secret management adalah tanggung jawab

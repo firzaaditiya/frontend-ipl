@@ -345,8 +345,8 @@ const DICT: Record<Lang, Record<string, string>> = {
     'settings.secLoginPathDesc': 'Path login dapat dikonfigurasi',
     'settings.secCors': 'CORS',
     'settings.secCorsDesc': 'Header eksplisit untuk API',
-    'settings.secStorage': 'Penyimpanan token',
-    'settings.secStorageDesc': 'JWT disimpan di localStorage untuk demo; produksi sebaiknya memakai cookie HttpOnly.',
+    'settings.secStorage': 'Penyimpanan sesi',
+    'settings.secStorageDesc': 'Sesi memakai cookie HttpOnly (SameSite=Lax, Secure di produksi) yang tidak bisa dibaca JavaScript; tidak ada token di localStorage.',
     'settings.note': 'Catatan',
     'settings.noteText':
       'Perubahan konfigurasi langsung dipersist ke config.json dan diterapkan ke scanner. Kredensial Telegram tidak pernah dikirim kembali ke browser.',
@@ -765,8 +765,8 @@ const DICT: Record<Lang, Record<string, string>> = {
     'settings.secLoginPathDesc': 'Login path is configurable',
     'settings.secCors': 'CORS',
     'settings.secCorsDesc': 'Explicit headers for the API',
-    'settings.secStorage': 'Token storage',
-    'settings.secStorageDesc': 'JWT uses localStorage for the demo; production should use an HttpOnly cookie.',
+    'settings.secStorage': 'Session storage',
+    'settings.secStorageDesc': 'Sessions use an HttpOnly cookie (SameSite=Lax, Secure in production) that JavaScript cannot read; no token is stored in localStorage.',
     'settings.note': 'Note',
     'settings.noteText':
       'Configuration changes are persisted to config.json and applied to the scanner. Telegram credentials are never sent back to the browser.',

@@ -23,7 +23,12 @@ function RouteFallback() {
 }
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, ready } = useAuth();
+  // Selama sesi belum diverifikasi (ready=false), tampilkan loading agar
+  // pengguna yang sesinya valid tidak sempat dilempar ke halaman login.
+  if (!ready) {
+    return <RouteFallback />;
+  }
   if (!isAuthenticated) {
     return <Navigate to="/secure-gate" replace />;
   }
@@ -39,7 +44,7 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
 };
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, ready } = useAuth();
   const { t } = useI18n();
   const location = useLocation();
 
@@ -53,7 +58,15 @@ function AppRoutes() {
       <Routes>
         <Route
           path="/secure-gate"
-          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
+          element={
+            !ready ? (
+              <RouteFallback />
+            ) : isAuthenticated ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <LoginPage />
+            )
+          }
         />
 
         <Route
