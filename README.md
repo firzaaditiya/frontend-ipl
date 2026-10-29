@@ -14,29 +14,35 @@ designed for an operator who needs to answer three questions quickly:
 
 ## Development
 
-From the repository root, the recommended command is:
+When this repository is inside the FIM-IPL monorepo, the convenient launcher is:
 
 ```powershell
 .\dev.ps1
 ```
 
-For Linux/WSL/VPS:
-
-```bash
-../dev.sh
-```
+The launcher belongs to the monorepo, not this standalone frontend repository.
+When this repository is cloned by itself, use the commands below.
 
 To run the frontend alone:
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-The Vite proxy reads the backend `server_port` from `../backend/data/config.json`.
-In a standalone frontend clone, copy `.env.example` to `.env` and set
-`FIM_API_PORT` to override it. The dashboard is available at
-`http://localhost:3000`.
+On Windows PowerShell use `npm.cmd` instead of `npm`. Copy `.env.example` to
+`.env` and set `FIM_API_PORT` to the port where the backend listens. The Vite
+proxy forwards `/api` requests to `127.0.0.1:<FIM_API_PORT>`. The dashboard is
+available at `http://localhost:3000`.
+
+Example Linux/WSL setup:
+
+```bash
+cp .env.example .env
+sed -i 's/^FIM_API_PORT=.*/FIM_API_PORT=8080/' .env
+npm ci
+npm run dev -- --host localhost
+```
 
 ## Production Build
 
@@ -69,6 +75,9 @@ npm run preview
   cookie and serve the dashboard over HTTPS.
 - Keep the dashboard on a separate origin from the monitored WordPress site to
   reduce the impact of a web application XSS issue.
+- The frontend cannot protect the backend if an attacker becomes `root` or the
+  FIM service user. Host permissions and deployment isolation are backend
+  responsibilities.
 
 ## Design Principles
 
