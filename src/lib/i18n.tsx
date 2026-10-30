@@ -154,6 +154,21 @@ const DICT: Record<Lang, Record<string, string>> = {
     'dash.nextScanSoon': 'Segera',
     'dash.lastCycle': 'Siklus terakhir',
     'dash.lastCycleValue': '{{anomalies}} anomali, {{quarantined}} dikarantina',
+    'dash.quarantinedNow': 'Berkas dikarantina saat ini',
+    'dash.quarantinedNowDesc':
+      'Berkas yang status terakhirnya masih dikarantina, beserta izin asli yang akan dipulihkan dan izin saat ini di disk.',
+    'dash.quarantinedEmpty': 'Tidak ada berkas dikarantina',
+    'dash.quarantinedEmptyDesc':
+      'Semua berkas yang terdeteksi sudah dilepas atau dihapus. Daftar ini diperbarui setiap ada siklus baru.',
+    'dash.originalMode': 'Izin asli',
+    'dash.currentMode': 'Izin saat ini',
+    'dash.releaseSuccess': 'Karantina berhasil dilepas.',
+    'dash.releaseSuccessMode': 'Karantina dilepas, izin dikembalikan ke {{mode}}.',
+    'dash.releaseFailed': 'Gagal melepas karantina.',
+    'dash.releaseConfirmTitle': 'Lepas karantina file?',
+    'dash.releaseConfirmDesc':
+      'Izin file akan dikembalikan ke izin aslinya bila tercatat, atau 0644 bila tidak tercatat. Pastikan file sudah diverifikasi aman sebelum dilepas.',
+    'dash.auditorCannotRelease': 'Auditor bersifat read-only dan tidak dapat melepas karantina.',
     'dash.seconds': '{{value}} detik',
     'dash.goroutines': '{{value}} goroutine',
     'dash.watchPaths': 'Watch path',
@@ -218,11 +233,12 @@ const DICT: Record<Lang, Record<string, string>> = {
     'audit.loadFailed': 'Gagal memuat audit trail.',
     'audit.exportSuccess': 'Ledger berhasil diekspor sebagai JSON.',
     'audit.exportFailed': 'Export ledger gagal.',
-    'audit.releaseSuccess': 'Permission file dikembalikan ke 0644.',
+    'audit.releaseSuccess': 'Karantina berhasil dilepas.',
+    'audit.releaseSuccessMode': 'Karantina dilepas, izin dikembalikan ke {{mode}}.',
     'audit.releaseFailed': 'Gagal melepas karantina.',
     'audit.releaseTitle': 'Lepas karantina file?',
     'audit.releaseDesc':
-      'Permission file akan dikembalikan ke 0644. Pastikan file sudah diverifikasi aman sebelum dilepas.',
+      'Izin file akan dikembalikan ke izin aslinya bila tercatat, atau 0644 bila tidak tercatat. Pastikan file sudah diverifikasi aman sebelum dilepas.',
     'audit.releaseConfirm': 'Lepas karantina',
     'audit.detailBlock': 'Detail block',
     'audit.file': 'Berkas',
@@ -238,7 +254,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     'audit.integrityChain': 'Rantai integritas',
     'audit.integrityChainDesc':
       'Block ini terikat ke block sebelumnya melalui hash. Mengubah satu byte pada block akan membuat verifikasi rantai gagal pada block tersebut.',
-    'audit.releaseBtn': 'Lepas karantina (0644)',
+    'audit.releaseBtn': 'Lepas karantina',
     'audit.auditorReadOnly':
       'Auditor bersifat read-only. Aksi pelepasan karantina hanya untuk Super Admin.',
 
@@ -583,6 +599,21 @@ const DICT: Record<Lang, Record<string, string>> = {
     'dash.nextScanSoon': 'Imminent',
     'dash.lastCycle': 'Last cycle',
     'dash.lastCycleValue': '{{anomalies}} anomalies, {{quarantined}} quarantined',
+    'dash.quarantinedNow': 'Currently quarantined files',
+    'dash.quarantinedNowDesc':
+      'Files whose latest status is still quarantined, with the original mode to restore and the current on-disk mode.',
+    'dash.quarantinedEmpty': 'No quarantined files',
+    'dash.quarantinedEmptyDesc':
+      'All detected files have been released or deleted. This list refreshes on every new cycle.',
+    'dash.originalMode': 'Original mode',
+    'dash.currentMode': 'Current mode',
+    'dash.releaseSuccess': 'Quarantine released.',
+    'dash.releaseSuccessMode': 'Quarantine released, permission restored to {{mode}}.',
+    'dash.releaseFailed': 'Failed to release quarantine.',
+    'dash.releaseConfirmTitle': 'Release file quarantine?',
+    'dash.releaseConfirmDesc':
+      'File permission will be restored to its recorded original mode, or 0644 if none was recorded. Make sure the file has been verified as safe before releasing it.',
+    'dash.auditorCannotRelease': 'Auditor access is read-only and cannot release quarantine.',
     'dash.seconds': '{{value}} seconds',
     'dash.goroutines': '{{value}} goroutines',
     'dash.watchPaths': 'Watch paths',
@@ -647,11 +678,12 @@ const DICT: Record<Lang, Record<string, string>> = {
     'audit.loadFailed': 'Failed to load the audit trail.',
     'audit.exportSuccess': 'Ledger exported as JSON.',
     'audit.exportFailed': 'Ledger export failed.',
-    'audit.releaseSuccess': 'File permission restored to 0644.',
+    'audit.releaseSuccess': 'Quarantine released.',
+    'audit.releaseSuccessMode': 'Quarantine released, permission restored to {{mode}}.',
     'audit.releaseFailed': 'Failed to release quarantine.',
     'audit.releaseTitle': 'Release file quarantine?',
     'audit.releaseDesc':
-      'File permission will be restored to 0644. Make sure the file has been verified as safe before releasing it.',
+      'File permission will be restored to its recorded original mode, or 0644 if none was recorded. Make sure the file has been verified as safe before releasing it.',
     'audit.releaseConfirm': 'Release quarantine',
     'audit.detailBlock': 'Block detail',
     'audit.file': 'File',
@@ -667,7 +699,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     'audit.integrityChain': 'Integrity chain',
     'audit.integrityChainDesc':
       'This block is bound to the previous block through its hash. Changing a single byte will break chain verification at that block.',
-    'audit.releaseBtn': 'Release quarantine (0644)',
+    'audit.releaseBtn': 'Release quarantine',
     'audit.auditorReadOnly':
       'Auditor access is read-only. Only a Super Admin can release quarantine.',
 

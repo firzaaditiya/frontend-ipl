@@ -129,8 +129,28 @@ export const enableMaintenance = () => api.post('/maintenance/enable');
 export const disableMaintenance = () => api.post('/maintenance/disable');
 
 // ---------- Quarantine ----------
+// Daftar berkas yang sedang dikarantina (v1.3.0). original_mode adalah
+// izin yang akan dipulihkan saat pelepasan (null bila tidak tercatat),
+// current_mode adalah izin berkas saat ini di disk.
+export interface QuarantinedFile {
+  file_path: string;
+  original_mode: string | null;
+  current_mode: string | null;
+  exists: boolean;
+}
+
+export const getQuarantinedList = () =>
+  api.get<{ files: QuarantinedFile[]; count: number }>('/quarantine/list');
+
+export interface ReleaseResult {
+  message: string;
+  restored_mode: string;
+  restored_original: boolean;
+  audited: boolean;
+}
+
 export const releaseQuarantine = (filePath: string) =>
-  api.post('/quarantine/release', { file_path: filePath });
+  api.post<ReleaseResult>('/quarantine/release', { file_path: filePath });
 
 // ---------- Backup ----------
 export const runBackup = () => api.post('/backup/run');

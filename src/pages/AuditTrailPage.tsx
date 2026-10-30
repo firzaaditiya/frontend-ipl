@@ -210,8 +210,12 @@ export default function AuditTrailPage() {
     if (!releaseTarget) return;
     setReleasing(true);
     try {
-      await releaseQuarantine(releaseTarget.file_path);
-      showToast('success', t('audit.releaseSuccess'));
+      const res = await releaseQuarantine(releaseTarget.file_path);
+      const mode = res.data?.restored_mode;
+      showToast(
+        'success',
+        mode ? t('audit.releaseSuccessMode', { mode }) : t('audit.releaseSuccess'),
+      );
       setReleaseTarget(null);
       setSelectedBlock(null);
       await fetchBlocks();

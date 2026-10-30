@@ -35,9 +35,12 @@ import {
 import {
   getBlocks,
   getMetrics,
+  getQuarantinedList,
   getSettings,
   getStats,
+  releaseQuarantine,
   verifyChain,
+  type QuarantinedFile,
   type ScanMetric,
 } from '../lib/api';
 import {
@@ -49,15 +52,18 @@ import {
   formatTime,
   shortHash,
 } from '../lib/format';
+import { useAuth } from '../lib/auth';
 import { useI18n } from '../lib/i18n';
 import { useRealtime, useRealtimeEvent } from '../lib/realtime';
 import {
   Badge,
   Button,
   Card,
+  ConfirmDialog,
   EmptyState,
   LoadingBlock,
   PageHeader,
+  Toast,
 } from '../components/ui';
 
 interface Stats {
@@ -119,10 +125,15 @@ const TOOLTIP_LABEL_STYLE = { color: '#9ca09a', fontSize: 9, marginBottom: 2 };
 export default function DashboardPage() {
   const { t, lang } = useI18n();
   const { connected } = useRealtime();
+  const { isAuditor } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [settings, setSettings] = useState<SettingsSummary | null>(null);
   const [metrics, setMetrics] = useState<ScanMetric[]>([]);
   const [recent, setRecent] = useState<Block[]>([]);
+  const [quarantined, setQuarantined] = useState<QuarantinedFile[]>([]);
+  const [releaseTarget, setReleaseTarget] = useState<QuarantinedFile | null>(null);
+  const [releasing, setReleasing] = useState(false);
+  const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [verify, setVerify] = useState<VerifyResult | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -149,9 +160,10 @@ export default function DashboardPage() {
         getMetrics(60),
         getBlocks(1, 10),
         getSettings(),
+        getQuarantinedList(),
       ]);
 
-      const [statsRes, metricsRes, blocksRes, settingsRes] = results;
+      const [statsRes, metricsRes, blocksRes, settingsRes, quarantinedRes] = results;
 
       if (statsRes.status === 'fulfilled') {
         setStats(statsRes.value.data);
@@ -169,6 +181,9 @@ export default function DashboardPage() {
       }
       if (settingsRes.status === 'fulfilled') {
         setSettings(settingsRes.value.data);
+      }
+      if (quarantinedRes.status === 'fulfilled') {
+        setQuarantined(quarantinedRes.value.data.files || []);
       }
     } finally {
       inFlight.current = false;
@@ -223,6 +238,28 @@ export default function DashboardPage() {
       });
     } finally {
       setVerifying(false);
+    }
+  };
+
+  // Pelepasan dari dasbor (v1.3.0): pesan sukses memakai restored_mode
+  // dari respons API, bukan angka izin yang ditebak, agar operator tidak
+  // diberi tahu 0644 padahal yang dipulihkan adalah 0600 atau 0640.
+  const handleRelease = async () => {
+    if (!releaseTarget) return;
+    setReleasing(true);
+    try {
+      const res = await releaseQuarantine(releaseTarget.file_path);
+      const mode = res.data?.restored_mode;
+      setToast({
+        text: mode ? t('dash.releaseSuccessMode', { mode }) : t('dash.releaseSuccess'),
+        type: 'success',
+      });
+      setReleaseTarget(null);
+      await loadData(true);
+    } catch {
+      setToast({ text: t('dash.releaseFailed'), type: 'error' });
+    } finally {
+      setReleasing(false);
     }
   };
 
@@ -289,6 +326,26 @@ export default function DashboardPage() {
             </Button>
           </>
         }
+      />
+
+      {toast && <Toast message={toast.text} tone={toast.type} onClose={() => setToast(null)} />}
+
+      <ConfirmDialog
+        open={!!releaseTarget}
+        title={t('dash.releaseConfirmTitle')}
+        description={
+          <>
+            {t('dash.releaseConfirmDesc')}
+            <span className="mt-2 block truncate rounded border border-border bg-background/60 px-2 py-1 font-mono text-[10px] text-muted-foreground">
+              {releaseTarget?.file_path}
+            </span>
+          </>
+        }
+        confirmLabel={t('audit.releaseConfirm')}
+        tone="warning"
+        busy={releasing}
+        onConfirm={handleRelease}
+        onClose={() => !releasing && setReleaseTarget(null)}
       />
 
       {loadError && (
@@ -755,6 +812,54 @@ export default function DashboardPage() {
           )}
         </Card>
       </div>
+
+      <Card
+        title={t('dash.quarantinedNow')}
+        description={t('dash.quarantinedNowDesc')}
+        icon={<Lock className="h-4 w-4" />}
+        padded={false}
+      >
+        {quarantined.length === 0 ? (
+          <EmptyState
+            icon={<ShieldCheck className="h-7 w-7" />}
+            title={t('dash.quarantinedEmpty')}
+            description={t('dash.quarantinedEmptyDesc')}
+          />
+        ) : (
+          <div className="divide-y divide-border">
+            {quarantined.map((file) => (
+              <div key={file.file_path} className="flex items-center gap-3 px-4 py-2.5">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-warning/30 bg-warning/10 text-warning">
+                  <Lock className="h-3.5 w-3.5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-mono text-[11px] text-foreground" title={file.file_path}>
+                    {file.file_path}
+                  </p>
+                  <p className="text-[9px] text-muted-foreground">
+                    {t('dash.originalMode')}: {file.original_mode ?? '—'} ·{' '}
+                    {t('dash.currentMode')}: {file.current_mode ?? '—'}
+                    {!file.exists ? ` · ${t('audit.fileGone')}` : ''}
+                  </p>
+                </div>
+                {isAuditor ? (
+                  <span className="hidden text-right text-[9px] text-muted-foreground sm:block">
+                    {t('dash.auditorCannotRelease')}
+                  </span>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    onClick={() => setReleaseTarget(file)}
+                    disabled={!file.exists}
+                  >
+                    {t('audit.releaseBtn')}
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
